@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Fitness Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input, .input-group select {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f56565, #e53e3e);
+        }
+
+        .btn-export {
+            background: linear-gradient(45deg, #48bb78, #38a169);
+            margin-right: 10px;
+        }
+
+        .data-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .date-range-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .date-range-controls .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+
+        .date-range-controls .btn.active {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }        
+
+        .habits-grid {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .habit-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: all 0.2s;
+        }
+
+        .habit-item:hover {
+            background: #edf2f7;
+            transform: translateX(4px);
+        }
+
+        .habit-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .habit-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .habit-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .habit-streak {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+            background: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .delete-btn {
+            background: #f56565;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.05);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .weight-log {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .weight-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f7fafc;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .weight-entry:hover {
+            background: #edf2f7;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .goal-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .goal-item:hover {
+            background: #edf2f7;
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .goal-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .goal-percentage {
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .goal-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .summary-card {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .data-controls {
+                justify-content: center;
+            }
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #2d3748;
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💪 Fitness Dashboard</h1>
+        <p>Track your habits, weight, and fitness goals</p>
+    </div>
+
+    <div class="dashboard">
+        <!-- Data Management -->
+        <div class="card">
+            <h2>📊 Data Management</h2>
+            <div class="data-controls">
+                <button class="btn btn-export" onclick="exportData()">📥 Export Data</button>
+                <label for="importFile" class="btn">📤 Import Data</label>
+                <input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(event)">
+                <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalHabits">0</div>
+                    <div class="stat-label">Total Habits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalWeights">0</div>
+                    <div class="stat-label">Weight Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalGoals">0</div>
+                    <div class="stat-label">Active Goals</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Habits Tracker -->
+        <div class="card">
+            <h2>✅ Habits Tracker</h2>
+                <div class="date-range-controls">
+                    <button class="btn btn-small" id="weekBtn" onclick="changeHabitsRange('week')">Week</button>
+                    <button class="btn btn-small" id="monthBtn" onclick="changeHabitsRange('month')">Month</button>
+                    <button class="btn btn-small" id="yearBtn" onclick="changeHabitsRange('year')">Year</button>
+                </div>
+                <br>
+            <div class="input-group">
+                <input type="text" id="habitName" placeholder="Enter habit name" maxlength="50">
+                <button class="btn" onclick="addHabit()">Add Habit</button>
+            </div>
+            <div class="habits-grid" id="habitsGrid">
+                <div class="empty-state">
+                    <h3>No habits yet</h3>
+                    <p>Add your first habit above!</p>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="habitStreak">0</div>
+                    <div class="stat-label">Best Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="habitCompletion">0%</div>
+                    <div class="stat-label">Today</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="habitsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bodyweight Tracker -->
+        <div class="card">
+            <h2>⚖️ Weight Tracker</h2>
+            <div class="input-group">
+                <input type="number" id="weightInput" placeholder="Weight (kg)" step="0.1" min="30" max="300">
+                <input type="date" id="weightDate">
+                <button class="btn" onclick="addWeight()">Add Weight</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="currentWeight">--</div>
+                    <div class="stat-label">Current</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="weightChange">--</div>
+                    <div class="stat-label">30d Change</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="weightTrend">--</div>
+                    <div class="stat-label">Trend</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="weightChart"></canvas>
+            </div>
+            <div class="weight-log" id="weightLog"></div>
+        </div>
+
+        <!-- Fitness Goals -->
+        <div class="card">
+            <h2>🎯 Fitness Goals</h2>
+            <div class="input-group">
+                <input type="text" id="goalName" placeholder="Goal name" maxlength="30">
+                <input type="number" id="goalTarget" placeholder="Target" step="0.1" min="0.1">
+                <input type="number" id="goalCurrent" placeholder="Current" step="0.1" min="0">
+                <select id="goalUnit">
+                    <option value="kg">kg</option>
+                    <option value="reps">reps</option>
+                    <option value="km">km</option>
+                    <option value="min">min</option>
+                    <option value="hrs">hrs</option>
+                    <option value="%">%</option>
+                </select>
+                <button class="btn" onclick="addGoal()">Add Goal</button>
+            </div>
+            <div id="goalsContainer">
+                <div class="empty-state">
+                    <h3>No goals yet</h3>
+                    <p>Set your first fitness goal above!</p>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Monthly Summary -->
+        <div class="card summary-card">
+            <h2>📅 Monthly Summary</h2>
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="monthlyHabits">0</div>
+                    <div class="stat-label">Habits Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="monthlyWeightLogs">0</div>
+                    <div class="stat-label">Weight Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="monthlyGoalProgress">0%</div>
+                    <div class="stat-label">Avg Goal Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="monthlyStreak">0</div>
+                    <div class="stat-label">Longest Streak</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Storage
+        let data = {
+            habits: JSON.parse(localStorage.getItem('fitness_habits') || '[]'),
+            weights: JSON.parse(localStorage.getItem('fitness_weights') || '[]'),
+            goals: JSON.parse(localStorage.getItem('fitness_goals') || '[]'),
+            habitLogs: JSON.parse(localStorage.getItem('fitness_habitLogs') || '{}')
+        };
+
+        // Current habits chart range
+        let currentHabitsRange = 'week';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+            
+            // Set initial button state
+            document.getElementById('weekBtn').classList.add('active');
+            
+            renderAll();
+            updateDataStats();
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    exportData();
+                }
+            });
+        });
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('fitness_habits', JSON.stringify(data.habits));
+            localStorage.setItem('fitness_weights', JSON.stringify(data.weights));
+            localStorage.setItem('fitness_goals', JSON.stringify(data.goals));
+            localStorage.setItem('fitness_habitLogs', JSON.stringify(data.habitLogs));
+            updateDataStats();
+        }
+
+        // Data Management Functions
+        function exportData() {
+            const exportData = {
+                habits: data.habits,
+                weights: data.weights,
+                goals: data.goals,
+                habitLogs: data.habitLogs,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `fitness-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (confirm('This will replace all your current data. Are you sure?')) {
+                        data.habits = importedData.habits || [];
+                        data.weights = importedData.weights || [];
+                        data.goals = importedData.goals || [];
+                        data.habitLogs = importedData.habitLogs || {};
+                        
+                        saveData();
+                        renderAll();
+                        alert('Data imported successfully!');
+                    }
+                } catch (error) {
+                    alert('Error importing data. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone!')) {
+                if (confirm('Really sure? This will delete all your habits, weights, and goals!')) {
+                    data = {
+                        habits: [],
+                        weights: [],
+                        goals: [],
+                        habitLogs: {}
+                    };
+                    saveData();
+                    renderAll();
+                }
+            }
+        }
+
+        function updateDataStats() {
+            document.getElementById('totalHabits').textContent = data.habits.length;
+            document.getElementById('totalWeights').textContent = data.weights.length;
+            document.getElementById('totalGoals').textContent = data.goals.length;
+        }
+
+        // Habits Functions
+        function changeHabitsRange(range) {
+            currentHabitsRange = range;
+            
+            // Update button states
+            document.getElementById('weekBtn').classList.remove('active');
+            document.getElementById('monthBtn').classList.remove('active');
+            document.getElementById('yearBtn').classList.remove('active');
+            document.getElementById(range + 'Btn').classList.add('active');
+            
+            // Re-render the chart with new range
+            renderHabitsChart();
+        }
+
+        function addHabit() {
+            const name = document.getElementById('habitName').value.trim();
+            if (!name) return;
+            
+            if (data.habits.some(h => h.name.toLowerCase() === name.toLowerCase())) {
+                alert('Habit already exists!');
+                return;
+            }
+            
+            data.habits.push({
+                id: Date.now(),
+                name: name,
+                streak: 0,
+                lastCompleted: null,
+                created: new Date().toISOString()
+            });
+            
+            document.getElementById('habitName').value = '';
+            saveData();
+            renderHabits();
+        }
+
+        function deleteHabit(habitId) {
+            if (confirm('Delete this habit? This will also remove all its logs.')) {
+                data.habits = data.habits.filter(h => h.id !== habitId);
+                
+                // Remove logs for this habit
+                Object.keys(data.habitLogs).forEach(date => {
+                    delete data.habitLogs[date][habitId];
+                    if (Object.keys(data.habitLogs[date]).length === 0) {
+                        delete data.habitLogs[date];
+                    }
+                });
+                
+                saveData();
+                renderHabits();
+            }
+        }
+
+        function toggleHabit(habitId) {
+            const habit = data.habits.find(h => h.id === habitId);
+            const today = new Date().toDateString();
+            
+            if (!data.habitLogs[today]) {
+                data.habitLogs[today] = {};
+            }
+
+            if (data.habitLogs[today][habitId]) {
+                delete data.habitLogs[today][habitId];
+                habit.streak = Math.max(0, habit.streak - 1);
+            } else {
+                data.habitLogs[today][habitId] = true;
+                habit.streak += 1;
+                habit.lastCompleted = today;
+            }
+
+            saveData();
+            renderHabits();
+        }
+
+        function renderHabits() {
+            const container = document.getElementById('habitsGrid');
+            const today = new Date().toDateString();
+            
+            if (data.habits.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No habits yet</h3>
+                        <p>Add your first habit above!</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = data.habits.map(habit => `
+                    <div class="habit-item">
+                        <div class="habit-info">
+                            <span>${habit.name}</span>
+                            <span class="habit-streak">${habit.streak} days</span>
+                        </div>
+                        <div class="habit-controls">
+                            <input type="checkbox" class="habit-checkbox" 
+                                   ${data.habitLogs[today] && data.habitLogs[today][habit.id] ? 'checked' : ''}
+                                   onchange="toggleHabit(${habit.id})">
+                            <button class="delete-btn" onclick="deleteHabit(${habit.id})" title="Delete habit">×</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateHabitStats();
+            renderHabitsChart();
+        }
+
+        function updateHabitStats() {
+            const maxStreak = Math.max(...data.habits.map(h => h.streak), 0);
+            const today = new Date().toDateString();
+            const todayLogs = data.habitLogs[today] || {};
+            const completedToday = Object.keys(todayLogs).length;
+            const totalHabits = data.habits.length;
+            const completion = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+
+            document.getElementById('habitStreak').textContent = maxStreak;
+            document.getElementById('habitCompletion').textContent = completion + '%';
+        }
+
+        // Weight Functions
+        function addWeight() {
+            const weight = parseFloat(document.getElementById('weightInput').value);
+            const date = document.getElementById('weightDate').value;
+            
+            if (!weight || !date || weight < 30 || weight > 300) {
+                alert('Please enter a valid weight between 30-300 kg');
+                return;
+            }
+            
+            // Check if entry for this date already exists
+            const existingIndex = data.weights.findIndex(w => w.date === date);
+            
+            if (existingIndex >= 0) {
+                if (confirm('Weight entry for this date already exists. Update it?')) {
+                    data.weights[existingIndex].weight = weight;
+                } else {
+                    return;
+                }
+            } else {
+                data.weights.push({
+                    weight: weight,
+                    date: date,
+                    timestamp: new Date(date).getTime()
+                });
+            }
+            
+            data.weights.sort((a, b) => a.timestamp - b.timestamp);
+            
+            document.getElementById('weightInput').value = '';
+            saveData();
+            renderWeight();
+        }
+
+        function deleteWeight(index) {
+            if (confirm('Delete this weight entry?')) {
+                data.weights.splice(index, 1);
+                saveData();
+                renderWeight();
+            }
+        }
+
+        function renderWeight() {
+            updateWeightStats();
+            renderWeightChart();
+            renderWeightLog();
+        }
+
+        function updateWeightStats() {
+            if (data.weights.length === 0) {
+                document.getElementById('currentWeight').textContent = '--';
+                document.getElementById('weightChange').textContent = '--';
+                document.getElementById('weightTrend').textContent = '--';
+                return;
+            }
+            
+            const current = data.weights[data.weights.length - 1].weight;
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const oldWeight = data.weights.find(w => new Date(w.date) <= thirtyDaysAgo);
+            const change = oldWeight ? (current - oldWeight.weight).toFixed(1) : 0;
+            
+            // Calculate trend
+            let trend = '--';
+            if (data.weights.length >= 3) {
+                const recent = data.weights.slice(-3);
+                const avgChange = recent.reduce((sum, w, i) => {
+                    if (i === 0) return 0;
+                    return sum + (w.weight - recent[i-1].weight);
+                }, 0) / 2;
+                
+                trend = avgChange > 0.1 ? '↗️' : avgChange < -0.1 ? '↘️' : '➡️';
+            }
+            
+            document.getElementById('currentWeight').textContent = current + ' kg';
+            document.getElementById('weightChange').textContent = (change > 0 ? '+' : '') + change + ' kg';
+            document.getElementById('weightTrend').textContent = trend;
+        }
+
+        function renderWeightLog() {
+            const container = document.getElementById('weightLog');
+            const recentWeights = data.weights.slice(-10).reverse();
+            
+            container.innerHTML = recentWeights.map((entry, index) => `
+                <div class="weight-entry">
+                    <span>${new Date(entry.date).toLocaleDateString()}</span>
+                    <span>${entry.weight} kg</span>
+                    <button class="delete-btn" onclick="deleteWeight(${data.weights.length - 1 - index})" title="Delete entry">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Goals Functions
+        function addGoal() {
+            const name = document.getElementById('goalName').value.trim();
+            const target = parseFloat(document.getElementById('goalTarget').value);
+            const current = parseFloat(document.getElementById('goalCurrent').value);
+            const unit = document.getElementById('goalUnit').value;
+            
+            if (!name || !target || current < 0) {
+                alert('Please fill all fields with valid values');
+                return;
+            }
+            
+            data.goals.push({
+                id: Date.now(),
+                name: name,
+                target: target,
+                current: current,
+                unit: unit,
+                created: new Date().toISOString()
+            });
+            
+            document.getElementById('goalName').value = '';
+            document.getElementById('goalTarget').value = '';
+            document.getElementById('goalCurrent').value = '';
+            
+            saveData();
+            renderGoals();
+        }
+
+        function updateGoal(goalId, newCurrent) {
+            const goal = data.goals.find(g => g.id === goalId);
+            if (goal) {
+                goal.current = Math.max(0, parseFloat(newCurrent) || 0);
+                saveData();
+                renderGoals();
+            }
+        }
+
+        function deleteGoal(goalId) {
+            if (confirm('Delete this goal?')) {
+                data.goals = data.goals.filter(g => g.id !== goalId);
+                saveData();
+                renderGoals();
+            }
+        }
+
+        function renderGoals() {
+            const container = document.getElementById('goalsContainer');
+            
+            if (data.goals.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No goals yet</h3>
+                        <p>Set your first fitness goal above!</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = data.goals.map(goal => {
+                    const percentage = Math.min(100, Math.round((goal.current / goal.target) * 100));
+                    return `
+                        <div class="goal-item">
+                            <div class="goal-header">
+                                <span class="goal-title">${goal.name}</span>
+                                <span class="goal-percentage">${percentage}%</span>
+                            </div>
+                            <div class="goal-controls">
+                                <input type="number" value="${goal.current}" step="0.1" min="0"
+                                       style="width: 80px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;"
+                                       onchange="updateGoal(${goal.id}, this.value)">
+                                <span>/ ${goal.target} ${goal.unit}</span>
+                                <button class="delete-btn" onclick="deleteGoal(${goal.id})" title="Delete goal">×</button>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            updateMonthlySummary();
+        }
+
+        // Chart Functions
+        let charts = {};
+
+        function renderHabitsChart() {
+            const ctx = document.getElementById('habitsChart').getContext('2d');
+            
+            if (charts.habits) {
+                charts.habits.destroy();
+            }
+
+            // If no habits, show empty state
+            if (data.habits.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#718096';
+                ctx.textAlign = 'center';
+                ctx.font = '16px Arial';
+                ctx.fillText('Add habits to see trends', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            let labels = [];
+            let daysToShow = 0;
+            let labelFormat = '';
+
+            // Configure date range based on selected view
+            switch (currentHabitsRange) {
+                case 'week':
+                    daysToShow = 7;
+                    labelFormat = 'weekday';
+                    break;
+                case 'month':
+                    daysToShow = 30;
+                    labelFormat = 'date';
+                    break;
+                case 'year':
+                    daysToShow = 365;
+                    labelFormat = 'month';
+                    break;
+            }
+
+            // Generate labels based on range
+            if (currentHabitsRange === 'year') {
+                // For yearly view, show monthly aggregates
+                const months = [];
+                for (let i = 11; i >= 0; i--) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    months.push({
+                        label: date.toLocaleDateString('en', { month: 'short' }),
+                        month: date.getMonth(),
+                        year: date.getFullYear()
+                    });
+                }
+                labels = months.map(m => m.label);
+            } else {
+                // For week and month views, show daily data
+                for (let i = daysToShow - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    
+                    if (currentHabitsRange === 'week') {
+                        labels.push(date.toLocaleDateString('en', { weekday: 'short' }));
+                    } else {
+                        labels.push(date.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
+                    }
+                }
+            }
+
+            // Color palette for different habits
+            const colors = [
+                '#667eea', '#764ba2', '#f093fb', '#f5576c', 
+                '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+                '#ffecd2', '#fcb69f', '#a8edea', '#fed6e3',
+                '#ff9a9e', '#fecfef', '#ffeaa7', '#74b9ff'
+            ];
+
+            // Create dataset for each habit
+            const datasets = data.habits.map((habit, index) => {
+                const habitData = [];
+                
+                if (currentHabitsRange === 'year') {
+                    // For yearly view, calculate monthly completion percentages
+                    for (let i = 11; i >= 0; i--) {
+                        const targetDate = new Date();
+                        targetDate.setMonth(targetDate.getMonth() - i);
+                        const month = targetDate.getMonth();
+                        const year = targetDate.getFullYear();
+                        
+                        let monthlyCompletions = 0;
+                        let monthlyDays = 0;
+                        
+                        // Count completions for this month
+                        Object.keys(data.habitLogs).forEach(dateStr => {
+                            const logDate = new Date(dateStr);
+                            if (logDate.getMonth() === month && logDate.getFullYear() === year) {
+                                monthlyDays++;
+                                if (data.habitLogs[dateStr][habit.id]) {
+                                    monthlyCompletions++;
+                                }
+                            }
+                        });
+                        
+                        const percentage = monthlyDays > 0 ? (monthlyCompletions / monthlyDays) * 100 : 0;
+                        habitData.push(Math.round(percentage));
+                    }
+                } else {
+                    // For daily views (week and month)
+                    for (let i = daysToShow - 1; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - i);
+                        const dateStr = date.toDateString();
+                        
+                        const dayLogs = data.habitLogs[dateStr] || {};
+                        const completed = dayLogs[habit.id] ? 100 : 0;
+                        habitData.push(completed);
+                    }
+                }
+
+                const color = colors[index % colors.length];
+                
+                return {
+                    label: habit.name,
+                    data: habitData,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: false,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: currentHabitsRange === 'year' ? 3 : currentHabitsRange === 'month' ? 2 : 4,
+                    pointHoverRadius: currentHabitsRange === 'year' ? 5 : currentHabitsRange === 'month' ? 4 : 6,
+                    borderWidth: 3
+                };
+            });
+
+            // Add overall completion percentage
+            const overallData = [];
+            
+            if (currentHabitsRange === 'year') {
+                // Monthly overall completion for year view
+                for (let i = 11; i >= 0; i--) {
+                    const targetDate = new Date();
+                    targetDate.setMonth(targetDate.getMonth() - i);
+                    const month = targetDate.getMonth();
+                    const year = targetDate.getFullYear();
+                    
+                    let totalCompletions = 0;
+                    let totalPossible = 0;
+                    
+                    Object.keys(data.habitLogs).forEach(dateStr => {
+                        const logDate = new Date(dateStr);
+                        if (logDate.getMonth() === month && logDate.getFullYear() === year) {
+                            const dayLogs = data.habitLogs[dateStr] || {};
+                            totalCompletions += Object.keys(dayLogs).length;
+                            totalPossible += data.habits.length;
+                        }
+                    });
+                    
+                    const percentage = totalPossible > 0 ? (totalCompletions / totalPossible) * 100 : 0;
+                    overallData.push(Math.round(percentage));
+                }
+            } else {
+                // Daily overall completion for week and month views
+                for (let i = daysToShow - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toDateString();
+                    
+                    const dayLogs = data.habitLogs[dateStr] || {};
+                    const completed = Object.keys(dayLogs).length;
+                    const total = data.habits.length;
+                    overallData.push(total > 0 ? (completed / total) * 100 : 0);
+                }
+            }
+
+            datasets.push({
+                label: 'Overall Progress',
+                data: overallData,
+                borderColor: '#2d3748',
+                backgroundColor: 'rgba(45, 55, 72, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#2d3748',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 3,
+                pointRadius: currentHabitsRange === 'year' ? 4 : currentHabitsRange === 'month' ? 3 : 5,
+                pointHoverRadius: currentHabitsRange === 'year' ? 6 : currentHabitsRange === 'month' ? 5 : 7,
+                borderWidth: 4,
+                borderDash: [5, 5]
+            });
+
+            charts.habits = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: currentHabitsRange === 'year' ? 10 : 11
+                                },
+                                filter: function(legendItem, chartData) {
+                                    // Show fewer legend items for year view to avoid clutter
+                                    if (currentHabitsRange === 'year') {
+                                        return chartData.datasets.length <= 6 || legendItem.text === 'Overall Progress';
+                                    }
+                                    return chartData.datasets.length <= 8 || legendItem.text === 'Overall Progress';
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    if (label === 'Overall Progress') {
+                                        return label + ': ' + Math.round(context.raw) + '%';
+                                    } else {
+                                        if (currentHabitsRange === 'year') {
+                                            return label + ': ' + Math.round(context.raw) + '% completion';
+                                        } else {
+                                            return label + ': ' + (context.raw > 0 ? 'Completed ✅' : 'Not done ❌');
+                                        }
+                                    }
+                                },
+                                title: function(context) {
+                                    if (currentHabitsRange === 'year') {
+                                        return 'Month: ' + context[0].label;
+                                    }
+                                    return context[0].label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                },
+                                font: {
+                                    size: currentHabitsRange === 'year' ? 10 : 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: currentHabitsRange === 'year' ? 10 : currentHabitsRange === 'month' ? 9 : 12
+                                },
+                                maxTicksLimit: currentHabitsRange === 'month' ? 15 : undefined
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderWeightChart() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            
+            if (charts.weight) {
+                charts.weight.destroy();
+            }
+
+            const last30Days = data.weights.filter(w => {
+                const weightDate = new Date(w.date);
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return weightDate >= thirtyDaysAgo;
+            });
+
+            if (last30Days.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#718096';
+                ctx.textAlign = 'center';
+                ctx.font = '16px Arial';
+                ctx.fillText('No weight data yet', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            charts.weight = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last30Days.map(w => new Date(w.date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: last30Days.map(w => w.weight),
+                        borderColor: '#764ba2',
+                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#764ba2',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' kg';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMonthlySummary() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            // Monthly habit completions
+            let monthlyHabits = 0;
+            Object.keys(data.habitLogs).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                    monthlyHabits += Object.keys(data.habitLogs[dateStr]).length;
+                }
+            });
+            
+            // Monthly weight entries
+            const monthlyWeights = data.weights.filter(w => {
+                const date = new Date(w.date);
+                return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            }).length;
+            
+            // Average goal progress
+            const avgGoalProgress = data.goals.length > 0 ? 
+                Math.round(data.goals.reduce((sum, goal) => 
+                    sum + Math.min(100, (goal.current / goal.target) * 100), 0) / data.goals.length) : 0;
+            
+            // Longest streak this month
+            const longestStreak = Math.max(...data.habits.map(h => h.streak), 0);
+            
+            document.getElementById('monthlyHabits').textContent = monthlyHabits;
+            document.getElementById('monthlyWeightLogs').textContent = monthlyWeights;
+            document.getElementById('monthlyGoalProgress').textContent = avgGoalProgress + '%';
+            document.getElementById('monthlyStreak').textContent = longestStreak;
+        }
+
+        function renderAll() {
+            renderHabits();
+            renderWeight();
+            renderGoals();
+            renderOverviewChart();
+            updateMonthlySummary();
+        }
+
+        // Auto-save every 30 seconds
+        setInterval(() => {
+            if (Object.keys(data.habitLogs).length > 0 || data.weights.length > 0 || data.goals.length > 0) {
+                console.log('Auto-saving data...');
+                saveData();
+            }
+        }, 30000);
+
+        // Show tips on first visit
+        if (!localStorage.getItem('fitness_visited')) {
+            setTimeout(() => {
+                alert('💡 Tip: Use Ctrl+S to export your data anytime! Your data is saved automatically in your browser.');
+                localStorage.setItem('fitness_visited', 'true');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
